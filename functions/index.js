@@ -56,7 +56,7 @@ app.get('/:slug', async (req, res) => {
   if (slug.exists) {
     res.redirect(slug.data().destination)
   } else {
-    res.redirect('/?error')
+    res.redirect(`/?error=${req.params.slug}`)
   }
 })
 

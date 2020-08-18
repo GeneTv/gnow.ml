@@ -26,9 +26,19 @@ const app = new Vue({
       this.complete = true
 
       // Reset
-      this.url = ''
-      this.slug = ''
-      this.message = ''
+      if(res.status == 201) {
+        this.error = null
+        this.url = ''
+        this.slug = ''
+      }
+    }
+  },
+  created() {
+    var error = window.location.search
+    if(error != '') {
+      error = error.replace('?error=', '')
+      this.slug = error
+      this.message = `${error} does not exist. Create it now.`
     }
   }
 })
