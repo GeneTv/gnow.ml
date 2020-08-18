@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GNow - URL Shorter</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+</head>
+
+<body>
+  <div id="app">
+    <div class="container" style="display: flex;flex-direction: column;align-items: center;margin-top: 50px;">
+      <form @submit.prevent="createUrl()" style="padding: 4rem;background: #fcfcfc;border-radius: 4px;">
+        <div class="form-group">
+          <label for="url">Url</label>
+          <input v-model="url" name="url">
+        </div>
+
+        <div class="form-group">
+          <label for="slug">Slug</label>
+          <input v-model="slug" name="slug">
+        </div>
+        <button type="submit" class="btn btn-primary" :disabled="!complete">Create</button>
+        <pre v-if="message" :style="[status == 201 ? {'color': '#2aa965'} : {'color': '#d7364e'}]">
+          {{ message }}
+        </pre>
+      </form>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  <script src="main.js"></script>
+</body>
+
+</html>
