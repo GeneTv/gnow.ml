@@ -5,8 +5,10 @@ admin.initializeApp({
 const functions = require('firebase-functions');
 const firestore = admin.firestore();
 const express = require('express');
+const cors = require('cors');
 
 const app = express();
+app.use(cors());
 
 /*
   Create slug
@@ -14,33 +16,39 @@ const app = express();
 app.post('/create', async (req, res) => {
   const slugsRef = firestore.collection('slugs');
 
-  // Check if request is correct
-  if((!req.body.slug || !req.body.destination) || !isURL(req.body.destination)) {
+  var errors = [];
+  // Validate url
+  if (!required(req.body.url) || !validURL(req.body.url)) errors.push('URL')
+  // Validate slug
+  if (!required(req.body.slug) || !minLength(req.body.slug, 4)) errors.push('SLUG')
+
+
+  if (errors.length != 0) {
+    // Send out error message if validation failed
     res.status(400).json({
-      message: 'Bad request'
+      errors
     })
     return
   }
+
 
   // Check if slug existing
   const slug = await slugsRef.doc(req.body.slug).get();
   if (slug.exists) {
     res.status(200).json({
-      message: 'Slug already used'
+      error: 'SLUG_USED'
     })
     return
   }
 
   // Create new slug
   await slugsRef.doc(req.body.slug).set({
-    destination: req.body.destination,
+    destination: req.body.url,
     created: Date.now()
   })
 
   res.status(201).json({
-    slug: req.body.slug,
-    redirect: req.body.destination,
-    message: `Created slug ${req.body.slug}`
+    urlShorted: `https://gnow.ml/${req.body.slug}`
   })
 })
 
@@ -51,7 +59,7 @@ app.post('/create', async (req, res) => {
 */
 app.get('/:slug', async (req, res) => {
   const slugsRef = firestore.collection('slugs');
-  
+
   const slug = await slugsRef.doc(req.params.slug).get();
   if (slug.exists) {
     res.redirect(slug.data().destination)
@@ -59,16 +67,25 @@ app.get('/:slug', async (req, res) => {
     res.redirect(`/?error=${req.params.slug}`)
   }
 })
-
 exports.app = functions.region('us-central1').https.onRequest(app);
 
 
 
 /*
-  Functions
+  Validation functions
 */
-function isURL(str) {
-  var urlRegex = '^(?:(?:http|https)://)(?:\\S+(?::\\S*)?@)?(?:(?:(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[0-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]+-?)*[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]+-?)*[a-z\\u00a1-\\uffff0-9]+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,})))|localhost)(?::\\d{2,5})?(?:(/|\\?|#)[^\\s]*)?$';
-  var url = new RegExp(urlRegex, 'i');
-  return str.length < 2083 && url.test(str);
+function required(str) {
+  return str && str.length > 0
+}
+function minLength(str, minLength) {
+  return str && str.length >= minLength
+}
+function validURL(str) {
+  var pattern = new RegExp('^(https?:\\/\\/)?' + // protocol
+    '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
+    '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
+    '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
+    '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
+    '(\\#[-a-z\\d_]*)?$', 'i'); // fragment locator
+  return !!pattern.test(str)
 }
